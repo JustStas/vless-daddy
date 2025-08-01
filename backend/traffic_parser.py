@@ -50,7 +50,9 @@ def _get_usernames_for_server(server_ip: str) -> list[str]:
     return usernames
 
 
-def get_traffic_usage(server_ip: str, ssh_user: str, ssh_password: str) -> dict:
+def get_traffic_usage(
+    server_ip: str, ssh_user: str, ssh_password: str, ssh_port: int
+) -> dict:
     """Return a dict { username: { 'up': int, 'down': int } } for the given server."""
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -61,7 +63,9 @@ def get_traffic_usage(server_ip: str, ssh_user: str, ssh_password: str) -> dict:
         return {}
 
     try:
-        ssh_client.connect(hostname=server_ip, username=ssh_user, password=ssh_password)
+        ssh_client.connect(
+            hostname=server_ip, username=ssh_user, password=ssh_password, port=ssh_port
+        )
 
         for username in usernames:
             for direction in ("uplink", "downlink"):
@@ -77,7 +81,9 @@ def get_traffic_usage(server_ip: str, ssh_user: str, ssh_password: str) -> dict:
         ssh_client.close()
 
 
-def reset_traffic_usage(server_ip: str, ssh_user: str, ssh_password: str) -> bool:
+def reset_traffic_usage(
+    server_ip: str, ssh_user: str, ssh_password: str, ssh_port: int
+) -> bool:
     """Reset all user traffic counters to zero. Returns True on success."""
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -87,7 +93,9 @@ def reset_traffic_usage(server_ip: str, ssh_user: str, ssh_password: str) -> boo
         return False
 
     try:
-        ssh_client.connect(hostname=server_ip, username=ssh_user, password=ssh_password)
+        ssh_client.connect(
+            hostname=server_ip, username=ssh_user, password=ssh_password, port=ssh_port
+        )
         success = True
         for username in usernames:
             for direction in ("uplink", "downlink"):

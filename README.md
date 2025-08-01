@@ -127,12 +127,16 @@ The application will automatically:
 
 1. From the dashboard, click **"Manage Clients"** for any server
 2. **Add clients:** Enter a username and click "Add Client"
+   - Uses Xray's built-in API for instant user addition
+   - No server restart required
 3. **View connection details:** Click "Show" to see:
    - Client UUID
    - VLESS connection string
    - QR code for mobile apps
 4. **Monitor traffic:** View real-time upload/download statistics
 5. **Remove clients:** Click "Delete" to remove access
+   - Uses Xray's built-in API for instant user removal
+   - No server restart required
 
 ### Traffic Monitoring
 
@@ -166,12 +170,27 @@ This starts the React development server with hot-reloading at `http://localhost
 - `GET /api/servers/{id}/traffic` - Get traffic statistics
 - `POST /api/servers/{id}/reset_traffic` - Reset traffic counters
 
+## Technical Architecture
+
+### Client Management
+- **API-Based Operations:** Uses Xray's built-in API for user management operations
+- **Real-time Updates:** Client additions/removals are applied instantly without service restarts
+- **Efficient Operations:** No configuration file rewriting - direct API communication
+- **Atomic Operations:** Each user operation is isolated and atomic
+
+### API Endpoints Used
+- `xray api adu` - Add users to inbound configurations
+- `xray api rmu` - Remove users from inbound configurations
+- `xray api inbounduser` - Query user information
+- `xray api stats` - Traffic statistics retrieval
+
 ## Security Considerations
 
 - **Local Operation:** The application runs locally and stores data in a local SQLite database
 - **SSH Security:** Uses standard SSH authentication; consider using SSH keys for enhanced security
 - **Traffic Encryption:** All proxy traffic is encrypted using XTLS-Reality
 - **No External Dependencies:** No data is sent to external services
+- **API Security:** Xray API is bound to localhost only (127.0.0.1:8081)
 
 ## Troubleshooting
 

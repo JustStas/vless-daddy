@@ -29,14 +29,22 @@ def file_exists(sftp_client, path):
 
 
 def create_proxy_stream(
-    server_ip, ssh_user, ssh_password, mask_domain, proxy_name, overwrite: bool = False
+    server_ip,
+    ssh_user,
+    ssh_password,
+    ssh_port,
+    mask_domain,
+    proxy_name,
+    overwrite: bool = False,
 ):
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     try:
         yield "status:connect:inprogress"
-        ssh_client.connect(hostname=server_ip, username=ssh_user, password=ssh_password)
+        ssh_client.connect(
+            hostname=server_ip, username=ssh_user, password=ssh_password, port=ssh_port
+        )
         yield "status:connect:done"
 
         sftp = ssh_client.open_sftp()
@@ -122,7 +130,10 @@ def create_proxy_stream(
                 "access": "/var/log/xray/access.log",
                 "error": "/var/log/xray/error.log",
             },
-            "api": {"tag": "api", "services": ["StatsService"]},
+            "api": {
+                "tag": "api",
+                "services": ["HandlerService", "LoggerService", "StatsService"],
+            },
             "stats": {},
             "policy": {
                 "levels": {"0": {"statsUserUplink": True, "statsUserDownlink": True}},
@@ -212,8 +223,16 @@ def create_proxy_stream(
         conn = sqlite3.connect("vless_daddy.db")
         cursor = conn.cursor()
         cursor.execute(
-            "INSERT INTO servers (server_ip, ssh_user, ssh_password, mask_domain, public_key, proxy_name) VALUES (?, ?, ?, ?, ?, ?)",
-            (server_ip, ssh_user, ssh_password, mask_domain, public_key, proxy_name),
+            "INSERT INTO servers (server_ip, ssh_user, ssh_password, ssh_port, mask_domain, public_key, proxy_name) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                server_ip,
+                ssh_user,
+                ssh_password,
+                ssh_port,
+                mask_domain,
+                public_key,
+                proxy_name,
+            ),
         )
         server_id = cursor.lastrowid
         cursor.execute(

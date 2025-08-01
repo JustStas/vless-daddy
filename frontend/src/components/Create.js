@@ -20,6 +20,7 @@ function Create() {
         server_ip: '',
         ssh_user: 'root',
         ssh_password: '',
+        ssh_port: 22,
         mask_domain: '',
         proxy_name: 'MyProxy'
     });
@@ -109,6 +110,9 @@ function Create() {
 
                         <label>SSH Password:</label>
                         <input type="password" name="ssh_password" value={formData.ssh_password} onChange={handleInputChange} required />
+
+                        <label>SSH Port:</label>
+                        <input type="number" name="ssh_port" value={formData.ssh_port} onChange={handleInputChange} required />
 
                         <label>Masking Domain:</label>
                         <input type="text" name="mask_domain" value={formData.mask_domain} onChange={handleInputChange} required />

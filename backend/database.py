@@ -11,6 +11,7 @@ def init_db():
             server_ip TEXT NOT NULL,
             ssh_user TEXT NOT NULL,
             ssh_password TEXT NOT NULL,
+            ssh_port INTEGER NOT NULL DEFAULT 22,
             mask_domain TEXT NOT NULL,
             public_key TEXT NOT NULL,
             proxy_name TEXT NOT NULL
