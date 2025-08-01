@@ -77,10 +77,6 @@ def create_proxy_stream(
         check_curl_command = "command -v curl >/dev/null 2>&1 || (apt-get update && apt-get install -y curl)"
         execute_command(ssh_client, check_curl_command)
 
-        # Install grpcurl (binary) if missing
-        check_grpc_command = "if [ ! -f /usr/local/bin/grpcurl ]; then curl -L -o /usr/local/bin/grpcurl https://github.com/fullstorydev/grpcurl/releases/latest/download/grpcurl_linux_amd64 && chmod +x /usr/local/bin/grpcurl ; fi"
-        execute_command(ssh_client, check_grpc_command)
-
         install_command = 'bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install'
         execute_command(ssh_client, install_command)
         yield "status:install:done"

@@ -22,19 +22,14 @@ def _run_stat(ssh_client: paramiko.SSHClient, name: str, reset: bool = False) ->
 
     if exit_status != 0:
         # Counter not found or other error ⇒ 0 bytes.
-        error_msg = stderr.read().decode("utf-8").strip()
-        print(f"Counter '{name}' error: {error_msg}")
         return 0
 
     # Successful call returns JSON:  {"stat": {"name": "...", "value": 123}}
     try:
         output = stdout.read().decode("utf-8").strip()
-        print(f"Counter '{name}' output: '{output}'")
-
         data = json.loads(output)
         return int(data["stat"]["value"])
-    except (ValueError, KeyError, json.JSONDecodeError) as e:
-        print(f"Failed to parse counter '{name}' output: '{output}', error: {e}")
+    except (ValueError, KeyError, json.JSONDecodeError):
         return 0
 
 
