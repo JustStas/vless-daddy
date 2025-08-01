@@ -1,15 +1,17 @@
+import base64
 import io
 import sqlite3
 import uuid
 
+import pyqrcode
 import uvicorn
 from client_manager import update_server_config
 from database import init_db
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from proxy_creator import create_proxy
+from proxy_creator import create_proxy_stream
 from pydantic import BaseModel
 
 app = FastAPI()
@@ -23,6 +25,7 @@ class ProxyRequest(BaseModel):
     ssh_user: str
     ssh_password: str
     mask_domain: str
+    proxy_name: str
 
 
 class ClientRequest(BaseModel):
@@ -62,39 +65,16 @@ async def get_servers():
 
 @app.post("/api/proxy")
 async def api_create_proxy(proxy_request: ProxyRequest):
-    try:
-        result = create_proxy(
+    return StreamingResponse(
+        create_proxy_stream(
             proxy_request.server_ip,
             proxy_request.ssh_user,
             proxy_request.ssh_password,
             proxy_request.mask_domain,
-        )
-
-        conn = sqlite3.connect("vless_daddy.db")
-        cursor = conn.cursor()
-        cursor.execute(
-            "INSERT INTO servers (server_ip, ssh_user, ssh_password, mask_domain) VALUES (?, ?, ?, ?)",
-            (
-                proxy_request.server_ip,
-                proxy_request.ssh_user,
-                proxy_request.ssh_password,
-                proxy_request.mask_domain,
-            ),
-        )
-        server_id = cursor.lastrowid
-
-        client_uuid = result["vless_link"].split("//")[1].split("@")[0]
-
-        cursor.execute(
-            "INSERT INTO clients (server_id, uuid, email) VALUES (?, ?, ?)",
-            (server_id, client_uuid, "user1"),
-        )
-        conn.commit()
-        conn.close()
-
-        return JSONResponse(content=result)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+            proxy_request.proxy_name,
+        ),
+        media_type="text/event-stream",
+    )
 
 
 @app.get("/api/servers/{server_id}/clients")
@@ -108,6 +88,38 @@ async def get_clients(server_id: int):
     clients = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return JSONResponse(content=clients)
+
+
+@app.get("/api/clients/{client_id}")
+async def get_client_details(client_id: int):
+    conn = sqlite3.connect("vless_daddy.db")
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        """
+        SELECT c.uuid, s.server_ip, s.mask_domain, s.public_key, s.proxy_name
+        FROM clients c
+        JOIN servers s ON c.server_id = s.id
+        WHERE c.id = ?
+    """,
+        (client_id,),
+    )
+    data = cursor.fetchone()
+    conn.close()
+
+    if not data:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    vless_link = f"vless://{data['uuid']}@{data['server_ip']}:443/?encryption=none&type=tcp&sni={data['mask_domain']}&fp=chrome&security=reality&alpn=h2&flow=xtls-rprx-vision&pbk={data['public_key']}&packetEncoding=xudp#{data['proxy_name']}"
+
+    qr = pyqrcode.create(vless_link)
+    buffer = io.BytesIO()
+    qr.png(buffer, scale=5)
+    qr_code_b64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+    return JSONResponse(
+        content={"uuid": data["uuid"], "vless_link": vless_link, "qr_code": qr_code_b64}
+    )
 
 
 @app.post("/api/servers/{server_id}/clients")

@@ -2,6 +2,8 @@ document.addEventListener("DOMContentLoaded", async function() {
     const serverId = new URLSearchParams(window.location.search).get('server_id');
     const serverDetails = document.getElementById("server-details");
     const clientsTableBody = document.querySelector("#clients-table tbody");
+    const modal = document.getElementById("client-modal");
+    const closeButton = document.querySelector(".close-button");
 
     if (!serverId) {
         window.location.href = "/management";
@@ -22,16 +24,18 @@ document.addEventListener("DOMContentLoaded", async function() {
                     const row = document.createElement("tr");
                     row.innerHTML = `
                         <td>${client.email}</td>
-                        <td>${client.uuid}</td>
-                        <td><button onclick="deleteClient(${serverId}, ${client.id})">Delete</button></td>
+                        <td>
+                            <button onclick="showClient(${client.id})">Show</button>
+                            <button onclick="deleteClient(${serverId}, ${client.id})">Delete</button>
+                        </td>
                     `;
                     clientsTableBody.appendChild(row);
                 });
             } else {
-                clientsTableBody.innerHTML = `<tr><td colspan="3">Error loading clients: ${clients.detail}</td></tr>`;
+                clientsTableBody.innerHTML = `<tr><td colspan="2">Error loading clients: ${clients.detail}</td></tr>`;
             }
         } catch (error) {
-            clientsTableBody.innerHTML = `<tr><td colspan="3">An unexpected error occurred: ${error.message}</td></tr>`;
+            clientsTableBody.innerHTML = `<tr><td colspan="2">An unexpected error occurred: ${error.message}</td></tr>`;
         }
     }
 
@@ -63,7 +67,35 @@ document.addEventListener("DOMContentLoaded", async function() {
             alert(`An unexpected error occurred: ${error.message}`);
         }
     });
+
+    closeButton.onclick = function() {
+        modal.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
 });
+
+async function showClient(clientId) {
+    try {
+        const response = await fetch(`/api/clients/${clientId}`);
+        const data = await response.json();
+
+        if (response.ok) {
+            document.getElementById("modal-uuid").textContent = data.uuid;
+            document.getElementById("modal-link").textContent = data.vless_link;
+            document.getElementById("modal-qr").src = `data:image/png;base64,${data.qr_code}`;
+            document.getElementById("client-modal").style.display = "block";
+        } else {
+            alert(`Error showing client: ${data.detail}`);
+        }
+    } catch (error) {
+        alert(`An unexpected error occurred: ${error.message}`);
+    }
+}
 
 async function deleteClient(serverId, clientId) {
     if (confirm("Are you sure you want to delete this client?")) {
@@ -73,7 +105,6 @@ async function deleteClient(serverId, clientId) {
             });
 
             if (response.ok) {
-                // The loadClients function is not in this scope, so we reload the page
                 window.location.reload();
             } else {
                 const result = await response.json();

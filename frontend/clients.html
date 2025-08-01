@@ -18,7 +18,6 @@
         <thead>
             <tr>
                 <th>Email</th>
-                <th>UUID</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -33,6 +32,19 @@
         <input type="text" id="client-email" name="client_email" required><br>
         <button type="submit">Add Client</button>
     </form>
+
+    <!-- Modal for showing client details -->
+    <div id="client-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Client Details</h2>
+            <p><strong>UUID:</strong> <span id="modal-uuid"></span></p>
+            <p><strong>Connection Link:</strong></p>
+            <pre><code id="modal-link"></code></pre>
+            <p><strong>QR Code:</strong></p>
+            <img id="modal-qr" src="" alt="QR Code">
+        </div>
+    </div>
 
     <script src="/static/clients.js"></script>
 </body>
