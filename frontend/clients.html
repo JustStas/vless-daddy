@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VLESS Proxy Manager - Client Management</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Client Management</h1>
+
+    <a href="/management">Back to Server List</a>
+
+    <h2 id="server-details"></h2>
+
+    <h3>Clients</h3>
+    <table id="clients-table">
+        <thead>
+            <tr>
+                <th>Email</th>
+                <th>UUID</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Client rows will be inserted here by JavaScript -->
+        </tbody>
+    </table>
+
+    <h3>Add New Client</h3>
+    <form id="add-client-form">
+        <label for="client-email">Client Email:</label><br>
+        <input type="text" id="client-email" name="client_email" required><br>
+        <button type="submit">Add Client</button>
+    </form>
+
+    <script src="/static/clients.js"></script>
+</body>
+</html>

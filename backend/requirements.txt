@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+paramiko
+python-multipart
+jinja2
+pydantic-settings
+passlib
+pyqrcode
+pypng

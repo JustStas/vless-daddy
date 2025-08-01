@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VLESS Proxy Manager</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>VLESS Proxy Manager</h1>
+    <a href="/management">Go to Management Dashboard</a>
+
+    <h2>Create New Proxy</h2>
+    <form id="create-proxy-form">
+        <label for="server-ip">Server IP:</label><br>
+        <input type="text" id="server-ip" name="server_ip" required><br>
+
+        <label for="ssh-user">SSH User:</label><br>
+        <input type="text" id="ssh-user" name="ssh_user" required><br>
+
+        <label for="ssh-password">SSH Password:</label><br>
+        <input type="password" id="ssh-password" name="ssh_password" required><br>
+
+        <label for="mask-domain">Masking Domain:</label><br>
+        <input type="text" id="mask-domain" name="mask_domain" required><br>
+
+        <button type="submit">Create Proxy</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
