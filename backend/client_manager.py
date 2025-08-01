@@ -20,7 +20,7 @@ def update_server_config(server_ip, ssh_user, ssh_password, clients):
         config["inbounds"][0]["settings"]["clients"] = [
             {
                 "id": client["uuid"],
-                "username": client["username"],
+                "email": client["username"],
                 "flow": "xtls-rprx-vision",
             }
             for client in clients

@@ -50,7 +50,10 @@ def create_proxy_stream(
             return
 
         if overwrite:
-            # Clean up the old entry from the local database
+            yield "status:cleanup:inprogress"
+            cleanup_command = "systemctl stop xray; rm -f /usr/local/etc/xray/config.json; rm -rf /var/log/xray"
+            execute_command(ssh_client, cleanup_command)
+
             conn = sqlite3.connect("vless_daddy.db")
             cursor = conn.cursor()
             try:
@@ -67,15 +70,25 @@ def create_proxy_stream(
                 conn.commit()
             finally:
                 conn.close()
+            yield "status:cleanup:done"
 
         yield "status:install:inprogress"
+        # Ensure curl is installed (needed for Xray install script)
         check_curl_command = "command -v curl >/dev/null 2>&1 || (apt-get update && apt-get install -y curl)"
         execute_command(ssh_client, check_curl_command)
+
+        # Install grpcurl (binary) if missing
+        check_grpc_command = "if [ ! -f /usr/local/bin/grpcurl ]; then curl -L -o /usr/local/bin/grpcurl https://github.com/fullstorydev/grpcurl/releases/latest/download/grpcurl_linux_amd64 && chmod +x /usr/local/bin/grpcurl ; fi"
+        execute_command(ssh_client, check_grpc_command)
+
         install_command = 'bash -c "$(curl -L https://github.com/XTLS/Xray-install/raw/main/install-release.sh)" @ install'
         execute_command(ssh_client, install_command)
         yield "status:install:done"
 
         yield "status:keys:inprogress"
+        log_setup_command = "mkdir -p /var/log/xray && touch /var/log/xray/access.log /var/log/xray/error.log && chown nobody:nogroup /var/log/xray/*.log && chmod 644 /var/log/xray/*.log"
+        execute_command(ssh_client, log_setup_command)
+
         generated_uuid = str(uuid.uuid4())
         private_key_output = execute_command(ssh_client, "/usr/local/bin/xray x25519")
 
@@ -93,8 +106,36 @@ def create_proxy_stream(
 
         yield "status:config:inprogress"
         config = {
-            "log": {"loglevel": "info"},
+            "log": {
+                "loglevel": "info",
+                "access": "/var/log/xray/access.log",
+                "error": "/var/log/xray/error.log",
+            },
+            "api": {"tag": "api", "services": ["StatsService"]},
+            "stats": {},
+            "policy": {
+                "levels": {"0": {"statsUserUplink": True, "statsUserDownlink": True}},
+                "system": {"statsInboundUplink": True, "statsInboundDownlink": True},
+            },
+            "routing": {
+                "rules": [
+                    {"type": "field", "inboundTag": ["api"], "outboundTag": "api"},
+                    {
+                        "type": "field",
+                        "protocol": ["bittorrent"],
+                        "outboundTag": "block",
+                    },
+                ],
+                "domainStrategy": "IPIfNonMatch",
+            },
             "inbounds": [
+                {
+                    "tag": "api",
+                    "listen": "127.0.0.1",
+                    "port": 8081,
+                    "protocol": "dokodemo-door",
+                    "settings": {"address": "127.0.0.1"},
+                },
                 {
                     "listen": "0.0.0.0",
                     "port": 443,
@@ -104,7 +145,7 @@ def create_proxy_stream(
                         "clients": [
                             {
                                 "id": generated_uuid,
-                                "username": "user1",
+                                "email": "user1",
                                 "flow": "xtls-rprx-vision",
                             }
                         ],
@@ -129,18 +170,13 @@ def create_proxy_stream(
                         "enabled": True,
                         "destOverride": ["http", "tls", "quic"],
                     },
-                }
+                },
             ],
             "outbounds": [
                 {"protocol": "freedom", "tag": "direct"},
                 {"protocol": "blackhole", "tag": "block"},
+                {"protocol": "freedom", "tag": "api", "settings": {}},
             ],
-            "routing": {
-                "rules": [
-                    {"type": "field", "protocol": "bittorrent", "outboundTag": "block"}
-                ],
-                "domainStrategy": "IPIfNonMatch",
-            },
         }
         config_str = json.dumps(config, indent=2)
 

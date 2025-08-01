@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const stepsConfig = [
+    { key: 'cleanup', title: 'Cleaning Server', subtitle: 'Removing old configuration and logs.' },
     { key: 'connect', title: 'Connecting to Server', subtitle: 'Establishing SSH connection...' },
     { key: 'install', title: 'Installing Software', subtitle: 'Ensuring curl and Xray are installed.' },
     { key: 'keys', title: 'Generating Keys', subtitle: 'Creating new UUID and public/private keys.' },

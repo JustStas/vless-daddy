@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VLESS Proxy Manager - Client Management</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Client Management</h1>
+
+    <a href="/">Back to Server List</a>
+
+    <h2 id="server-details"></h2>
+
+    <h3>Clients</h3>
+    <table id="clients-table">
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Client rows will be inserted here by JavaScript -->
+        </tbody>
+    </table>
+
+    <h3>Add New Client</h3>
+    <form id="add-client-form">
+        <label for="client-username">Client Username:</label><br>
+        <input type="text" id="client-username" name="client_username" required><br>
+        <button type="submit">Add Client</button>
+    </form>
+
+    <!-- Modal for showing client details -->
+    <div id="client-modal" class="modal" style="display:none;">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Client Details</h2>
+            <p><strong>UUID:</strong> <span id="modal-uuid"></span></p>
+            <p><strong>Connection Link:</strong></p>
+            <div class="link-container">
+                <pre><code id="modal-link"></code></pre>
+                <button id="copy-button" title="Copy to Clipboard">📋</button>
+            </div>
+            <p><strong>QR Code:</strong></p>
+            <img id="modal-qr" src="" alt="QR Code">
+        </div>
+    </div>
+
+    <script src="/static/clients.js"></script>
+</body>
+</html>

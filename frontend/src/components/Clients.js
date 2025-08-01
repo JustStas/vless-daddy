@@ -1,9 +1,19 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
 function Clients() {
     const { serverId } = useParams();
     const [clients, setClients] = useState([]);
+    const [traffic, setTraffic] = useState({});
     const [error, setError] = useState(null);
     const [selectedClient, setSelectedClient] = useState(null);
 
@@ -14,9 +24,18 @@ function Clients() {
             .catch(() => setError('Could not fetch clients.'));
     }, [serverId]);
 
+    const fetchTraffic = useCallback(() => {
+        setTraffic({}); // Clear old data while fetching
+        fetch(`/api/servers/${serverId}/traffic`)
+            .then(res => res.json())
+            .then(data => setTraffic(data))
+            .catch(() => console.error('Could not fetch traffic data.'));
+    }, [serverId]);
+
     useEffect(() => {
         fetchClients();
-    }, [fetchClients]);
+        fetchTraffic();
+    }, [fetchClients, fetchTraffic]);
 
     const handleAddClient = async (event) => {
         event.preventDefault();
@@ -45,6 +64,13 @@ function Clients() {
         setSelectedClient(data);
     };
 
+    const handleResetTraffic = async () => {
+        if (window.confirm("Are you sure you want to reset all traffic data for this server? This action cannot be undone.")) {
+            await fetch(`/api/servers/${serverId}/reset_traffic`, { method: 'POST' });
+            fetchTraffic();
+        }
+    };
+
     return (
         <div>
             <header>
@@ -56,24 +82,36 @@ function Clients() {
 
             <div className="content-split">
                 <div className="main-content">
-                    <h2>Clients for Server {serverId}</h2>
+                    <header>
+                        <h2>Clients for Server {serverId}</h2>
+                        <div>
+                            <button className="btn-secondary" onClick={fetchTraffic}>Refresh Traffic</button>
+                            <button className="btn-danger" onClick={handleResetTraffic}>Reset Traffic</button>
+                        </div>
+                    </header>
                     <table>
                         <thead>
                             <tr>
                                 <th>Username</th>
+                                <th>Traffic Usage (Up/Down)</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            {clients.map(client => (
-                                <tr key={client.id}>
-                                    <td>{client.username}</td>
-                                    <td>
-                                        <button className="btn-small" onClick={() => handleShowClient(client.id)}>Show</button>
-                                        <button className="btn-small btn-danger" onClick={() => handleDeleteClient(client.id)}>Delete</button>
-                                    </td>
-                                </tr>
-                            ))}
+                            {clients.map(client => {
+                                const clientTraffic = traffic[client.username] || { up: 0, down: 0 };
+                                const totalTraffic = clientTraffic.up + clientTraffic.down;
+                                return (
+                                    <tr key={client.id}>
+                                        <td>{client.username}</td>
+                                        <td>{formatBytes(totalTraffic)} ({formatBytes(clientTraffic.up)} / {formatBytes(clientTraffic.down)})</td>
+                                        <td>
+                                            <button className="btn-small" onClick={() => handleShowClient(client.id)}>Show</button>
+                                            <button className="btn-small btn-danger" onClick={() => handleDeleteClient(client.id)}>Delete</button>
+                                        </td>
+                                    </tr>
+                                );
+                            })}
                         </tbody>
                     </table>
                 </div>

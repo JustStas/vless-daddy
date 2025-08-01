@@ -4,6 +4,7 @@ import sqlite3
 import uuid
 from typing import Optional
 
+import paramiko
 import pyqrcode
 import uvicorn
 from client_manager import update_server_config
@@ -14,6 +15,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from proxy_creator import create_proxy_stream
 from pydantic import BaseModel, Field
+from traffic_parser import get_traffic_usage
 
 app = FastAPI()
 
@@ -173,6 +175,46 @@ async def delete_client(server_id: int, client_id: int):
         )
 
     return {"message": "Client added successfully"}
+
+
+@app.get("/api/servers/{server_id}/traffic")
+async def get_server_traffic(server_id: int):
+    conn = sqlite3.connect("vless_daddy.db")
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT server_ip, ssh_user, ssh_password FROM servers WHERE id = ?",
+        (server_id,),
+    )
+    server = cursor.fetchone()
+    conn.close()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    traffic_data = get_traffic_usage(
+        server["server_ip"], server["ssh_user"], server["ssh_password"]
+    )
+    return JSONResponse(content=traffic_data)
+
+
+@app.get("/api/servers/{server_id}/debug_traffic")
+async def get_debug_traffic(server_id: int):
+    conn = sqlite3.connect("vless_daddy.db")
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT server_ip, ssh_user, ssh_password FROM servers WHERE id = ?",
+        (server_id,),
+    )
+    server = cursor.fetchone()
+    conn.close()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+
+    traffic_data = get_traffic_usage(
+        server["server_ip"], server["ssh_user"], server["ssh_password"]
+    )
+    return JSONResponse(content=traffic_data)
 
 
 # Serve React App
