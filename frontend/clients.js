@@ -86,9 +86,18 @@ async function showClient(clientId) {
 
         if (response.ok) {
             document.getElementById("modal-uuid").textContent = data.uuid;
-            document.getElementById("modal-link").textContent = data.vless_link;
+            const linkElement = document.getElementById("modal-link");
+            linkElement.textContent = data.vless_link;
             document.getElementById("modal-qr").src = `data:image/png;base64,${data.qr_code}`;
             document.getElementById("client-modal").style.display = "block";
+
+            document.getElementById("copy-button").onclick = function() {
+                navigator.clipboard.writeText(data.vless_link).then(function() {
+                    alert("Copied to clipboard!");
+                }, function(err) {
+                    alert("Could not copy text: ", err);
+                });
+            }
         } else {
             alert(`Error showing client: ${data.detail}`);
         }

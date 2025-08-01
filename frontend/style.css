@@ -24,6 +24,29 @@ body {
     word-wrap: break-word;
 }
 
+.link-container {
+    position: relative;
+    background-color: #eee;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.link-container pre {
+    white-space: pre-wrap;       /* For modern browsers */
+    word-wrap: break-word;       /* For older browsers */
+    margin: 0;                   /* Reset default pre margin */
+}
+
+#copy-button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-size: 1.2em;
+}
+
 .close-button {
     color: #aaa;
     float: right;
