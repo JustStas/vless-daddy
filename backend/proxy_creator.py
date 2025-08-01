@@ -20,7 +20,17 @@ def execute_command(ssh_client, command):
     return stdout.read().decode("utf-8")
 
 
-def create_proxy_stream(server_ip, ssh_user, ssh_password, mask_domain, proxy_name):
+def file_exists(sftp_client, path):
+    try:
+        sftp_client.stat(path)
+        return True
+    except FileNotFoundError:
+        return False
+
+
+def create_proxy_stream(
+    server_ip, ssh_user, ssh_password, mask_domain, proxy_name, overwrite: bool = False
+):
     ssh_client = paramiko.SSHClient()
     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
@@ -28,6 +38,35 @@ def create_proxy_stream(server_ip, ssh_user, ssh_password, mask_domain, proxy_na
         yield "status:connect:inprogress"
         ssh_client.connect(hostname=server_ip, username=ssh_user, password=ssh_password)
         yield "status:connect:done"
+
+        sftp = ssh_client.open_sftp()
+        try:
+            config_exists = file_exists(sftp, "/usr/local/etc/xray/config.json")
+        finally:
+            sftp.close()
+
+        if config_exists and not overwrite:
+            yield "error:exists"
+            return
+
+        if overwrite:
+            # Clean up the old entry from the local database
+            conn = sqlite3.connect("vless_daddy.db")
+            cursor = conn.cursor()
+            try:
+                cursor.execute(
+                    "SELECT id FROM servers WHERE server_ip = ?", (server_ip,)
+                )
+                server_row = cursor.fetchone()
+                if server_row:
+                    server_id = server_row[0]
+                    cursor.execute(
+                        "DELETE FROM clients WHERE server_id = ?", (server_id,)
+                    )
+                    cursor.execute("DELETE FROM servers WHERE id = ?", (server_id,))
+                conn.commit()
+            finally:
+                conn.close()
 
         yield "status:install:inprogress"
         check_curl_command = "command -v curl >/dev/null 2>&1 || (apt-get update && apt-get install -y curl)"
@@ -65,7 +104,7 @@ def create_proxy_stream(server_ip, ssh_user, ssh_password, mask_domain, proxy_na
                         "clients": [
                             {
                                 "id": generated_uuid,
-                                "email": "user1",
+                                "username": "user1",
                                 "flow": "xtls-rprx-vision",
                             }
                         ],
@@ -131,7 +170,7 @@ def create_proxy_stream(server_ip, ssh_user, ssh_password, mask_domain, proxy_na
         )
         server_id = cursor.lastrowid
         cursor.execute(
-            "INSERT INTO clients (server_id, uuid, email) VALUES (?, ?, ?)",
+            "INSERT INTO clients (server_id, uuid, username) VALUES (?, ?, ?)",
             (server_id, generated_uuid, "user1"),
         )
         conn.commit()

@@ -9,6 +9,7 @@ document.addEventListener("DOMContentLoaded", async function() {
             servers.forEach(server => {
                 const row = document.createElement("tr");
                 row.innerHTML = `
+                    <td>${server.proxy_name}</td>
                     <td>${server.server_ip}</td>
                     <td>${server.mask_domain}</td>
                     <td><button onclick="manageClients(${server.id})">Manage Clients</button></td>
@@ -16,10 +17,10 @@ document.addEventListener("DOMContentLoaded", async function() {
                 serversTableBody.appendChild(row);
             });
         } else {
-            serversTableBody.innerHTML = `<tr><td colspan="3">Error loading servers: ${servers.detail}</td></tr>`;
+            serversTableBody.innerHTML = `<tr><td colspan="4">Error loading servers: ${servers.detail}</td></tr>`;
         }
     } catch (error) {
-        serversTableBody.innerHTML = `<tr><td colspan="3">An unexpected error occurred: ${error.message}</td></tr>`;
+        serversTableBody.innerHTML = `<tr><td colspan="4">An unexpected error occurred: ${error.message}</td></tr>`;
     }
 });
 

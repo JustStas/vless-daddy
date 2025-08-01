@@ -2,6 +2,7 @@ import base64
 import io
 import sqlite3
 import uuid
+from typing import Optional
 
 import pyqrcode
 import uvicorn
@@ -12,7 +13,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from proxy_creator import create_proxy_stream
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 app = FastAPI()
 
@@ -26,10 +27,11 @@ class ProxyRequest(BaseModel):
     ssh_password: str
     mask_domain: str
     proxy_name: str
+    overwrite: Optional[bool] = Field(default=False)
 
 
 class ClientRequest(BaseModel):
-    client_email: str
+    client_username: str
 
 
 @app.on_event("startup")
@@ -57,7 +59,7 @@ async def get_servers():
     conn = sqlite3.connect("vless_daddy.db")
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
-    cursor.execute("SELECT id, server_ip, mask_domain FROM servers")
+    cursor.execute("SELECT id, server_ip, mask_domain, proxy_name FROM servers")
     servers = [dict(row) for row in cursor.fetchall()]
     conn.close()
     return JSONResponse(content=servers)
@@ -72,6 +74,7 @@ async def api_create_proxy(proxy_request: ProxyRequest):
             proxy_request.ssh_password,
             proxy_request.mask_domain,
             proxy_request.proxy_name,
+            proxy_request.overwrite,
         ),
         media_type="text/event-stream",
     )
@@ -83,7 +86,7 @@ async def get_clients(server_id: int):
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute(
-        "SELECT id, uuid, email FROM clients WHERE server_id = ?", (server_id,)
+        "SELECT id, uuid, username FROM clients WHERE server_id = ?", (server_id,)
     )
     clients = [dict(row) for row in cursor.fetchall()]
     conn.close()
@@ -130,15 +133,17 @@ async def add_client(server_id: int, client_request: ClientRequest):
 
     new_uuid = str(uuid.uuid4())
     cursor.execute(
-        "INSERT INTO clients (server_id, uuid, email) VALUES (?, ?, ?)",
-        (server_id, new_uuid, client_request.client_email),
+        "INSERT INTO clients (server_id, uuid, username) VALUES (?, ?, ?)",
+        (server_id, new_uuid, client_request.client_username),
     )
     conn.commit()
 
     cursor.execute("SELECT * FROM servers WHERE id = ?", (server_id,))
     server = cursor.fetchone()
 
-    cursor.execute("SELECT uuid, email FROM clients WHERE server_id = ?", (server_id,))
+    cursor.execute(
+        "SELECT uuid, username FROM clients WHERE server_id = ?", (server_id,)
+    )
     clients = cursor.fetchall()
 
     conn.close()
@@ -167,7 +172,9 @@ async def delete_client(server_id: int, client_id: int):
     cursor.execute("SELECT * FROM servers WHERE id = ?", (server_id,))
     server = cursor.fetchone()
 
-    cursor.execute("SELECT uuid, email FROM clients WHERE server_id = ?", (server_id,))
+    cursor.execute(
+        "SELECT uuid, username FROM clients WHERE server_id = ?", (server_id,)
+    )
     clients = cursor.fetchall()
 
     conn.close()

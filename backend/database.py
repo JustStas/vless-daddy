@@ -23,7 +23,7 @@ def init_db():
             id INTEGER PRIMARY KEY,
             server_id INTEGER NOT NULL,
             uuid TEXT NOT NULL,
-            email TEXT NOT NULL,
+            username TEXT NOT NULL,
             FOREIGN KEY (server_id) REFERENCES servers (id)
         )
     """

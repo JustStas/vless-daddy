@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", async function() {
                 clients.forEach(client => {
                     const row = document.createElement("tr");
                     row.innerHTML = `
-                        <td>${client.email}</td>
+                        <td>${client.username}</td>
                         <td>
                             <button onclick="showClient(${client.id})">Show</button>
                             <button onclick="deleteClient(${serverId}, ${client.id})">Delete</button>

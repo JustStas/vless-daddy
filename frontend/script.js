@@ -1,10 +1,14 @@
-console.log("VLESS Proxy Manager script loaded");
-
 document.getElementById("create-proxy-form").addEventListener("submit", async function(event) {
     event.preventDefault();
-
     const formData = new FormData(event.target);
     const data = Object.fromEntries(formData.entries());
+    await createProxy(data);
+});
+
+async function createProxy(data, overwrite = false) {
+    if (overwrite) {
+        data.overwrite = true;
+    }
 
     const statusContainer = document.getElementById("status-container");
     const finalResultDiv = document.getElementById("final-result");
@@ -14,7 +18,7 @@ document.getElementById("create-proxy-form").addEventListener("submit", async fu
     finalResultDiv.innerHTML = "";
     statusContainer.style.display = "block";
 
-        // Reset status icons
+    // Reset status icons
     document.querySelectorAll('#status-steps li span').forEach(span => {
         span.textContent = '○';
     });
@@ -61,9 +65,18 @@ document.getElementById("create-proxy-form").addEventListener("submit", async fu
                 `;
             } else if (line.startsWith("error:")) {
                 const error = line.substring("error:".length);
-                resultDiv.innerHTML = `<p>Error: ${error}</p>`;
-                statusContainer.style.display = "none";
+                if (error === 'exists') {
+                    if (confirm("A proxy configuration already exists on this server. Do you want to overwrite it?")) {
+                        createProxy(data, true);
+                    } else {
+                        resultDiv.innerHTML = "<p>Operation cancelled by user.</p>";
+                        statusContainer.style.display = "none";
+                    }
+                } else {
+                    resultDiv.innerHTML = `<p>Error: ${error}</p>`;
+                    statusContainer.style.display = "none";
+                }
             }
         }
     }
-});
+}
