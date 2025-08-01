@@ -206,5 +206,4 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-
-*.db
+vless_daddy.db
