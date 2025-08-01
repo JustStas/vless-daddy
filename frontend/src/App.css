@@ -109,8 +109,53 @@ button[type="submit"] {
 
 /* Status & Results */
 .error { color: #e53e3e; }
-#status-container { margin-top: 20px; }
+.error-box { margin-top: 20px; padding: 15px; background: #fff5f5; border: 1px solid #e53e3e; color: #c53030; border-radius: 6px; }
 .result-box { margin-top: 20px; padding: 15px; background: #f0f4f8; border-radius: 6px; }
+
+/* Timeline */
+.timeline { position: relative; }
+.timeline-step { display: flex; align-items: flex-start; margin-bottom: 20px; }
+.timeline-node {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background-color: #cbd5e0;
+    margin-right: 20px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #fff;
+    box-shadow: 0 0 0 2px #cbd5e0;
+}
+.timeline-step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 32px;
+    bottom: -20px;
+    width: 2px;
+    background-color: #cbd5e0;
+    z-index: 0;
+}
+.timeline-content { padding-top: 5px; }
+.timeline-content strong { display: block; font-weight: 600; }
+.timeline-content p { color: #718096; margin: 5px 0 0 0; }
+
+/* Timeline Statuses */
+.timeline-step.status-inprogress .timeline-node { background-color: #4a90e2; box-shadow: 0 0 0 2px #4a90e2; }
+.timeline-step.status-inprogress .timeline-node::after {
+    content: '...';
+    color: white;
+    font-weight: bold;
+    font-size: 1.5em;
+    line-height: 1;
+}
+.timeline-step.status-done .timeline-node { background-color: #48bb78; box-shadow: 0 0 0 2px #48bb78; }
+.timeline-step.status-done .timeline-node::after { content: '✔'; color: white; }
+.timeline-step.status-error .timeline-node { background-color: #e53e3e; box-shadow: 0 0 0 2px #e53e3e; }
+.timeline-step.status-error .timeline-node::after { content: '!'; color: white; font-weight: bold; }
 
 /* Link & QR Code */
 .link-container { position: relative; background-color: #e8e8e8; padding: 10px; border-radius: 5px; }

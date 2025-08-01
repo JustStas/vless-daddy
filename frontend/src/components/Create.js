@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
+const stepsConfig = [
+    { key: 'connect', title: 'Connecting to Server', subtitle: 'Establishing SSH connection...' },
+    { key: 'install', title: 'Installing Software', subtitle: 'Ensuring curl and Xray are installed.' },
+    { key: 'keys', title: 'Generating Keys', subtitle: 'Creating new UUID and public/private keys.' },
+    { key: 'config', title: 'Deploying Configuration', subtitle: 'Uploading config file and restarting service.' },
+    { key: 'verify', title: 'Verifying Connection', subtitle: 'Testing the new proxy endpoint.' },
+    { key: 'done', title: 'Finalizing', subtitle: 'Saving the new server to the database.' },
+];
+
 function Create() {
-    const [status, setStatus] = useState({});
+    const [statuses, setStatuses] = useState({});
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
     const [inProgress, setInProgress] = useState(false);
@@ -21,7 +30,7 @@ function Create() {
 
     const startProxyCreation = async (overwrite = false) => {
         setInProgress(true);
-        setStatus({});
+        setStatuses({});
         setResult(null);
         setError(null);
 
@@ -47,7 +56,7 @@ function Create() {
                 for (const line of lines) {
                     if (line.startsWith("status:")) {
                         const [step, state] = line.substring(7).split(':');
-                        setStatus(prev => ({ ...prev, [step]: state }));
+                        setStatuses(prev => ({ ...prev, [step]: state }));
                     } else if (line.startsWith("result:")) {
                         setResult(JSON.parse(line.substring(7)));
                         setInProgress(false);
@@ -55,21 +64,24 @@ function Create() {
                         const errorMsg = line.substring(6);
                         if (errorMsg === 'exists') {
                             if (window.confirm("A proxy configuration already exists on this server. Do you want to overwrite it?")) {
-                                await startProxyCreation(true); // Re-trigger with overwrite flag
+                                await startProxyCreation(true);
                             } else {
                                 setError('Operation cancelled by user.');
                                 setInProgress(false);
                             }
                         } else {
                             setError(errorMsg);
-                            setInProgress(false);
+                            const currentStep = Object.keys(statuses).find(k => statuses[k] === 'inprogress');
+                            if (currentStep) {
+                                setStatuses(prev => ({ ...prev, [currentStep]: 'error' }));
+                            }
                         }
-                        return; // Stop processing stream on error
+                        return;
                     }
                 }
             }
         } finally {
-            setInProgress(false);
+            if (!result) setInProgress(false);
         }
     };
 
@@ -78,8 +90,6 @@ function Create() {
         startProxyCreation(false);
     };
 
-    const steps = ['connect', 'install', 'keys', 'config', 'verify', 'done'];
-
     return (
         <div>
             <header>
@@ -87,44 +97,51 @@ function Create() {
                 <Link to="/" className="btn-secondary">Back to Dashboard</Link>
             </header>
 
-            <form onSubmit={handleSubmit}>
-                <label>Server IP:</label>
-                <input type="text" name="server_ip" value={formData.server_ip} onChange={handleInputChange} required />
+            <div className="content-split">
+                <div className="main-content">
+                    <form onSubmit={handleSubmit}>
+                        <label>Server IP:</label>
+                        <input type="text" name="server_ip" value={formData.server_ip} onChange={handleInputChange} required />
 
-                <label>SSH User:</label>
-                <input type="text" name="ssh_user" value={formData.ssh_user} onChange={handleInputChange} required />
+                        <label>SSH User:</label>
+                        <input type="text" name="ssh_user" value={formData.ssh_user} onChange={handleInputChange} required />
 
-                <label>SSH Password:</label>
-                <input type="password" name="ssh_password" value={formData.ssh_password} onChange={handleInputChange} required />
+                        <label>SSH Password:</label>
+                        <input type="password" name="ssh_password" value={formData.ssh_password} onChange={handleInputChange} required />
 
-                <label>Masking Domain:</label>
-                <input type="text" name="mask_domain" value={formData.mask_domain} onChange={handleInputChange} required />
+                        <label>Masking Domain:</label>
+                        <input type="text" name="mask_domain" value={formData.mask_domain} onChange={handleInputChange} required />
 
-                <label>Proxy Name:</label>
-                <input type="text" name="proxy_name" value={formData.proxy_name} onChange={handleInputChange} required />
+                        <label>Proxy Name:</label>
+                        <input type="text" name="proxy_name" value={formData.proxy_name} onChange={handleInputChange} required />
 
-                <button type="submit" disabled={inProgress}>
-                    {inProgress ? 'Creating...' : 'Create Proxy'}
-                </button>
-            </form>
-
-            {inProgress && (
-                <div id="status-container">
-                    <h3>Creating Your Proxy...</h3>
-                    <ul>
-                        {steps.map(step => (
-                            <li key={step}>
-                                <span>
-                                    {status[step] === 'done' ? '✅' : status[step] === 'inprogress' ? '⌛' : '○'}
-                                </span>
-                                {step.charAt(0).toUpperCase() + step.slice(1)}...
-                            </li>
-                        ))}
-                    </ul>
+                        <button type="submit" disabled={inProgress}>
+                            {inProgress ? 'Creating...' : 'Create Proxy'}
+                        </button>
+                    </form>
                 </div>
-            )}
 
-            {error && <p className="error">{error}</p>}
+                <aside className="sidebar">
+                    {inProgress && (
+                        <div className="timeline">
+                            {stepsConfig.map((step, index) => {
+                                const status = statuses[step.key] || 'pending';
+                                return (
+                                    <div key={step.key} className={`timeline-step status-${status}`}>
+                                        <div className="timeline-node"></div>
+                                        <div className="timeline-content">
+                                            <strong>{step.title}</strong>
+                                            <p>{step.subtitle}</p>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </aside>
+            </div>
+
+            {error && <p className="error-box"><strong>Error:</strong> {error}</p>}
 
             {result && (
                 <div className="result-box">
