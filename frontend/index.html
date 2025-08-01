@@ -3,48 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VLESS Proxy Manager</title>
+    <title>VLESS Proxy Manager - Management</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h1>VLESS Proxy Manager</h1>
-    <a href="/management">Go to Management Dashboard</a>
+    <h1>Management Dashboard</h1>
 
-    <h2>Create New Proxy</h2>
-    <form id="create-proxy-form">
-        <label for="server-ip">Server IP:</label><br>
-        <input type="text" id="server-ip" name="server_ip" required><br>
+    <a href="/create">Create New Server</a>
 
-        <label for="ssh-user">SSH User:</label><br>
-        <input type="text" id="ssh-user" name="ssh_user" required><br>
+    <h2>Managed Servers</h2>
+    <table id="servers-table">
+        <thead>
+            <tr>
+                <th>Proxy Name</th>
+                <th>Server IP</th>
+                <th>Masking Domain</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Server rows will be inserted here by JavaScript -->
+        </tbody>
+    </table>
 
-        <label for="ssh-password">SSH Password:</label><br>
-        <input type="password" id="ssh-password" name="ssh_password" required><br>
-
-        <label for="mask-domain">Masking Domain:</label><br>
-        <input type="text" id="mask-domain" name="mask_domain" required><br>
-
-        <label for="proxy-name">Proxy Name:</label><br>
-        <input type="text" id="proxy-name" name="proxy_name" value="MyProxy"><br>
-
-        <button type="submit">Create Proxy</button>
-    </form>
-
-    <div id="result"></div>
-
-    <div id="status-container" style="display: none;">
-        <h3>Creating Your Proxy...</h3>
-        <ul id="status-steps">
-            <li id="step-connect"><span>○</span> Connecting to server...</li>
-            <li id="step-install"><span>○</span> Installing necessary software...</li>
-            <li id="step-keys"><span>○</span> Generating keys & configuration...</li>
-            <li id="step-config"><span>○</span> Applying configuration on server...</li>
-            <li id="step-verify"><span>○</span> Verifying connection...</li>
-            <li id="step-done"><span>○</span> Finalizing and saving...</li>
-        </ul>
-    </div>
-    <div id="final-result"></div>
-
-    <script src="/static/script.js"></script>
+    <script src="/static/management.js"></script>
 </body>
 </html>

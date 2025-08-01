@@ -17,8 +17,8 @@ from pydantic import BaseModel, Field
 
 app = FastAPI()
 
-app.mount("/static", StaticFiles(directory="frontend"), name="static")
-templates = Jinja2Templates(directory="frontend")
+app.mount("/static", StaticFiles(directory="frontend/build/static"), name="static")
+templates = Jinja2Templates(directory="frontend/build")
 
 
 class ProxyRequest(BaseModel):
@@ -37,21 +37,6 @@ class ClientRequest(BaseModel):
 @app.on_event("startup")
 async def startup():
     init_db()
-
-
-@app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
-
-
-@app.get("/management", response_class=HTMLResponse)
-async def read_management(request: Request):
-    return templates.TemplateResponse("management.html", {"request": request})
-
-
-@app.get("/clients", response_class=HTMLResponse)
-async def read_clients(request: Request):
-    return templates.TemplateResponse("clients.html", {"request": request})
 
 
 @app.get("/api/servers")
@@ -187,7 +172,13 @@ async def delete_client(server_id: int, client_id: int):
             [dict(client) for client in clients],
         )
 
-    return {"message": "Client deleted successfully"}
+    return {"message": "Client added successfully"}
+
+
+# Serve React App
+@app.get("/{full_path:path}")
+async def serve_react_app(request: Request, full_path: str):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 
 if __name__ == "__main__":
