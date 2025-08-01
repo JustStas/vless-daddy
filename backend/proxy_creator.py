@@ -49,27 +49,42 @@ def create_proxy_stream(
             yield "error:exists"
             return
 
+        # Always clean up DB entries by IP if overwriting
         if overwrite:
             yield "status:cleanup:inprogress"
-            cleanup_command = "systemctl stop xray; rm -f /usr/local/etc/xray/config.json; rm -rf /var/log/xray"
-            execute_command(ssh_client, cleanup_command)
 
+            # First, clean up local database entries based on IP
             conn = sqlite3.connect("vless_daddy.db")
             cursor = conn.cursor()
             try:
+                # Find all server IDs matching the IP address
                 cursor.execute(
                     "SELECT id FROM servers WHERE server_ip = ?", (server_ip,)
                 )
-                server_row = cursor.fetchone()
-                if server_row:
-                    server_id = server_row[0]
+                server_rows = cursor.fetchall()
+                server_ids = [row[0] for row in server_rows]
+
+                if server_ids:
+                    # Use placeholders for safe deletion
+                    placeholders = ",".join("?" for _ in server_ids)
+                    # Delete all clients associated with these servers
                     cursor.execute(
-                        "DELETE FROM clients WHERE server_id = ?", (server_id,)
+                        f"DELETE FROM clients WHERE server_id IN ({placeholders})",
+                        server_ids,
                     )
-                    cursor.execute("DELETE FROM servers WHERE id = ?", (server_id,))
+                    # Delete all servers matching the IP
+                    cursor.execute(
+                        "DELETE FROM servers WHERE server_ip = ?", (server_ip,)
+                    )
+
                 conn.commit()
             finally:
                 conn.close()
+
+            # Second, clean up the remote server
+            cleanup_command = "systemctl stop xray; rm -f /usr/local/etc/xray/config.json; rm -rf /var/log/xray"
+            execute_command(ssh_client, cleanup_command)
+
             yield "status:cleanup:done"
 
         yield "status:install:inprogress"
@@ -141,7 +156,7 @@ def create_proxy_stream(
                         "clients": [
                             {
                                 "id": generated_uuid,
-                                "email": "user1",
+                                "email": "DefaultUser",
                                 "flow": "xtls-rprx-vision",
                             }
                         ],
@@ -203,7 +218,7 @@ def create_proxy_stream(
         server_id = cursor.lastrowid
         cursor.execute(
             "INSERT INTO clients (server_id, uuid, username) VALUES (?, ?, ?)",
-            (server_id, generated_uuid, "user1"),
+            (server_id, generated_uuid, "DefaultUser"),
         )
         conn.commit()
         conn.close()

@@ -52,6 +52,22 @@ async def get_servers():
     return JSONResponse(content=servers)
 
 
+@app.get("/api/servers/{server_id}")
+async def get_server_details(server_id: int):
+    conn = sqlite3.connect("vless_daddy.db")
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, proxy_name FROM servers WHERE id = ?",
+        (server_id,),
+    )
+    server = cursor.fetchone()
+    conn.close()
+    if not server:
+        raise HTTPException(status_code=404, detail="Server not found")
+    return JSONResponse(content=dict(server))
+
+
 @app.post("/api/proxy")
 async def api_create_proxy(proxy_request: ProxyRequest):
     return StreamingResponse(

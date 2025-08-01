@@ -12,10 +12,18 @@ function formatBytes(bytes, decimals = 2) {
 
 function Clients() {
     const { serverId } = useParams();
+    const [serverName, setServerName] = useState('');
     const [clients, setClients] = useState([]);
     const [traffic, setTraffic] = useState({});
     const [error, setError] = useState(null);
     const [selectedClient, setSelectedClient] = useState(null);
+
+    const fetchServerDetails = useCallback(() => {
+        fetch(`/api/servers/${serverId}`)
+            .then(res => res.json())
+            .then(data => setServerName(data.proxy_name))
+            .catch(() => setError('Could not fetch server details.'));
+    }, [serverId]);
 
     const fetchClients = useCallback(() => {
         fetch(`/api/servers/${serverId}/clients`)
@@ -33,9 +41,10 @@ function Clients() {
     }, [serverId]);
 
     useEffect(() => {
+        fetchServerDetails();
         fetchClients();
         fetchTraffic();
-    }, [fetchClients, fetchTraffic]);
+    }, [fetchServerDetails, fetchClients, fetchTraffic]);
 
     const handleAddClient = async (event) => {
         event.preventDefault();
@@ -83,7 +92,7 @@ function Clients() {
             <div className="content-split">
                 <div className="main-content">
                     <header>
-                        <h2>Clients for Server {serverId}</h2>
+                        <h2>Clients for {serverName}</h2>
                         <div>
                             <button className="btn-secondary" onClick={fetchTraffic}>Refresh Traffic</button>
                             <button className="btn-danger" onClick={handleResetTraffic}>Reset Traffic</button>
